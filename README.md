@@ -22,7 +22,7 @@
 
 ## 简介
 
-这是基于 [kaaass/ZerotierFix](https://github.com/kaaass/ZerotierFix) 维护的 ZeroTier Android 客户端，底层使用 ZeroTierOne 的 JNI SDK。当前版本为 **2.0.1**，包名已迁移为 `com.vnimy.zerotier`。
+这是基于 [kaaass/ZerotierFix](https://github.com/kaaass/ZerotierFix) 维护的 ZeroTier Android 客户端，底层使用 ZeroTierOne 的 JNI SDK。当前版本为 **2.0.2**，包名已迁移为 `com.vnimy.zerotier`。
 
 本项目主要面向自建 Planet / Moon 的使用场景，保留了官方的网络连接能力，并补充了适合日常使用的界面与快捷操作。
 
@@ -37,12 +37,13 @@
 - 快捷设置磁贴：Android 7.0+ 下拉面板一键连接/断开，长按打开 App
 - 通知栏显示连接状态，可直接断开
 - 可配置移动数据、IPv6 等网络选项
+- 官方 ZeroTier 橙色主题（#fac073），顶部栏与开关配色与官方客户端一致
 - 中英文界面
 - 应用内检查更新（读取当前 Planet 服务器的 `version.json`）
 
 ## 下载
 
-最新版本：**2.0.1 (versionCode 19)**
+最新版本：**2.0.2 (versionCode 20)**
 
 - APK：<https://zt.vnimy.com/app/zerotier.apk>
 - 更新检查：<https://zt.vnimy.com/version.json>
@@ -51,7 +52,7 @@
 
 2.0 系列的包名从 `net.kaaass.zerotierfix` 改为 `com.vnimy.zerotier`，**不能直接覆盖安装**。
 
-请先卸载旧版，再安装 2.0.1；网络、Moon、Planet 等配置需要重新添加。全新安装没有历史数据迁移负担。
+请先卸载旧版，再安装 2.0.2；网络、Moon、Planet 等配置需要重新添加。全新安装没有历史数据迁移负担。
 
 ## 使用
 
@@ -148,8 +149,8 @@ App 会向当前配置的 Planet 服务器请求 `version.json`，并据此提�
 
 ```json
 {
-  "versionCode": 19,
-  "versionName": "2.0.1",
+  "versionCode": 20,
+  "versionName": "2.0.2",
   "url": "https://zt.vnimy.com/app/zerotier.apk",
   "notes": "全新应用：包名变更为 com.vnimy.zerotier，请卸载旧版后安装。"
 }

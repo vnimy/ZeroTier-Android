@@ -24,4 +24,5 @@
     <color name="logo_bkg">#FAC073</color>
 
     <color name="zerotier_orange">#fac073</color>
+    <color name="zerotier_orange_dark">#D89A4E</color>
 </resources>

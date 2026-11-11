@@ -38,9 +38,11 @@
         android:layout_centerHorizontal="true"
         android:layout_marginTop="8dp"
         android:text="@string/network_scan_qr"
+        android:textColor="?attr/colorSecondary"
         app:icon="@drawable/ic_qr_scan"
         app:iconGravity="textStart"
-        app:iconTint="?attr/colorPrimary" />
+        app:iconTint="?attr/colorSecondary"
+        app:strokeColor="?attr/colorSecondary" />
 
     <CheckBox
         android:id="@+id/join_network_default_route"
@@ -71,7 +73,9 @@
             android:id="@+id/dns_tab_layout"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:gravity="top">
+            android:gravity="top"
+            app:tabIndicatorColor="?attr/colorSecondary"
+            app:tabSelectedTextColor="?attr/colorSecondary">
 
             <com.google.android.material.tabs.TabItem
                 android:id="@+id/no_dns_layout"

@@ -1,7 +1,6 @@
 package com.vnimy.zerotier.ui;
 
 import android.content.Intent;
-import android.content.res.Configuration;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -56,12 +55,10 @@ public abstract class SingleFragmentActivity extends AppCompatActivity {
         final View statusBarScrim = findViewById(R.id.statusBarScrim);
         setSupportActionBar(toolbar);
 
-        // 状态栏区域与标题栏同为页面底色：深色主题用浅色图标，浅色主题用深色图标。
-        boolean nightMode = (getResources().getConfiguration().uiMode
-                & Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES;
+        // 状态栏区域与标题栏同为官方橙色：始终使用深色状态栏图标。
         WindowInsetsControllerCompat controller =
                 WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView());
-        controller.setAppearanceLightStatusBars(nightMode);
+        controller.setAppearanceLightStatusBars(true);
 
         ViewCompat.setOnApplyWindowInsetsListener(root, (v, insets) -> {
             Insets bars = insets.getInsets(WindowInsetsCompat.Type.systemBars());

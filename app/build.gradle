@@ -16,8 +16,8 @@ android {
         applicationId "com.vnimy.zerotier"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 19
-        versionName "2.0.1"
+        versionCode 20
+        versionName "2.0.2"
         multiDexEnabled true
 
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'

@@ -6,20 +6,21 @@
     android:layout_height="match_parent"
     android:orientation="vertical">
 
-    <!-- 仅用于填充状态栏区域，高度由代码设为状态栏 inset；与标题栏同为页面底色 -->
+    <!-- 仅用于填充状态栏区域，高度由代码设为状态栏 inset；与标题栏同为官方橙色 -->
     <View
         android:id="@+id/statusBarScrim"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:background="?android:attr/windowBackground" />
+        android:background="?attr/colorPrimary" />
 
     <androidx.appcompat.widget.Toolbar
         android:id="@+id/toolbar"
         android:layout_width="match_parent"
         android:layout_height="?attr/actionBarSize"
-        android:background="?android:attr/windowBackground"
+        android:background="?attr/colorPrimary"
+        android:theme="@style/ThemeOverlay.ZeroTier.Toolbar"
         app:popupTheme="@style/Theme.ZeroTier.PopupOverlay"
-        app:titleTextColor="?android:attr/textColorPrimary" />
+        app:titleTextColor="@color/black" />
 
     <FrameLayout
         android:id="@+id/fragmentContainer"
