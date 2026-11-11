@@ -7,6 +7,9 @@ import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ServiceInfo;
+import android.net.ConnectivityManager;
+import android.net.NetworkCapabilities;
+import android.net.NetworkRequest;
 import android.net.VpnService;
 import android.os.Binder;
 import android.os.Build;
@@ -78,8 +81,10 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 // TODO: clear up
@@ -114,6 +119,9 @@ public class ZeroTierOneService extends VpnService implements Runnable, EventLis
     private TunTapAdapter tunTapAdapter;
     private UdpCom udpCom;
     private Thread udpThread;
+    private ConnectivityManager connectivityManager;
+    private ConnectivityManager.NetworkCallback networkCallback;
+    private final Set<android.net.Network> physicalNetworks = new HashSet<>();
     private Thread v4MulticastScanner = new Thread() {
         /* class com.zerotier.one.service.ZeroTierOneService.AnonymousClass1 */
         List<String> subscriptions = new ArrayList<>();
@@ -290,6 +298,9 @@ public class ZeroTierOneService extends VpnService implements Runnable, EventLis
         }
         this.mStartID = startId;
 
+        // 监听物理网络变化，切换 Wi-Fi / 蜂窝网络后重新保护套接字并恢复 UDP 线程
+        registerNetworkMonitor();
+
         // 注册事件总线监听器
         if (!this.eventBus.isRegistered(this)) {
             this.eventBus.register(this);
@@ -454,6 +465,126 @@ public class ZeroTierOneService extends VpnService implements Runnable, EventLis
     }
 
     /**
+     * 监听物理网络变化。用 NOT_VPN 约束，避免把本应用自己的 tun 接口当成物理网络。
+     */
+    private void registerNetworkMonitor() {
+        if (this.networkCallback != null) {
+            return;
+        }
+        var manager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+        if (manager == null) {
+            return;
+        }
+        this.connectivityManager = manager;
+        var request = new NetworkRequest.Builder()
+                .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+                .addCapability(NetworkCapabilities.NET_CAPABILITY_NOT_VPN)
+                .build();
+        var callback = new ConnectivityManager.NetworkCallback() {
+            @Override
+            public void onAvailable(android.net.Network network) {
+                synchronized (physicalNetworks) {
+                    physicalNetworks.add(network);
+                }
+                onPhysicalNetworksChanged();
+            }
+
+            @Override
+            public void onLost(android.net.Network network) {
+                synchronized (physicalNetworks) {
+                    physicalNetworks.remove(network);
+                }
+                onPhysicalNetworksChanged();
+            }
+        };
+        try {
+            manager.registerNetworkCallback(request, callback);
+            this.networkCallback = callback;
+            Log.i(TAG, "Network monitor registered");
+        } catch (Exception e) {
+            Log.w(TAG, "Unable to register network callback", e);
+        }
+    }
+
+    private void unregisterNetworkMonitor() {
+        if (this.connectivityManager != null && this.networkCallback != null) {
+            try {
+                this.connectivityManager.unregisterNetworkCallback(this.networkCallback);
+            } catch (Exception e) {
+                Log.w(TAG, "Unable to unregister network callback", e);
+            }
+        }
+        this.networkCallback = null;
+        synchronized (this.physicalNetworks) {
+            this.physicalNetworks.clear();
+        }
+    }
+
+    /**
+     * 物理网络集合变化后：校验移动网络策略，重新保护 UDP 套接字，并在必要时拉起收包线程。
+     */
+    private void onPhysicalNetworksChanged() {
+        if (this.node == null || this.connectivityManager == null) {
+            // 尚未连接：启动时已经检查过网络环境
+            return;
+        }
+        boolean hasCellular = false;
+        boolean hasOther = false;
+        synchronized (this.physicalNetworks) {
+            for (android.net.Network network : this.physicalNetworks) {
+                var capabilities = this.connectivityManager.getNetworkCapabilities(network);
+                if (capabilities == null) {
+                    continue;
+                }
+                if (capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)) {
+                    hasCellular = true;
+                } else {
+                    // Wi-Fi / 以太网 / USB / 蓝牙等非蜂窝链路都算可用
+                    hasOther = true;
+                }
+            }
+        }
+        if (!hasCellular && !hasOther) {
+            Log.i(TAG, "Physical network lost, waiting for a new connection");
+            return;
+        }
+        boolean useCellularData = PreferenceManager.getDefaultSharedPreferences(this)
+                .getBoolean(Constants.PREF_NETWORK_USE_CELLULAR_DATA, false);
+        if (hasCellular && !hasOther && !useCellularData) {
+            // 与启动时的策略保持一致：只剩移动网络且未允许时断开
+            Log.i(TAG, "Only cellular network left and mobile data is disabled, stopping");
+            Toast.makeText(this, R.string.toast_mobile_data, Toast.LENGTH_LONG).show();
+            stopZeroTier();
+            stopSelf();
+            return;
+        }
+        Log.i(TAG, "Physical network changed: cellular=" + hasCellular + ", other=" + hasOther);
+        if (this.svrSocket != null && !protect(this.svrSocket)) {
+            Log.w(TAG, "Error re-protecting UDP socket after network change");
+        }
+        ensureUdpThreadAlive();
+    }
+
+    /**
+     * 网络切换会让 UDP 收包线程因 SocketException 退出，这里重新拉起，避免节点从此收不到包。
+     */
+    private void ensureUdpThreadAlive() {
+        if (this.node == null || this.udpCom == null) {
+            return;
+        }
+        if (this.svrSocket == null || this.svrSocket.isClosed()) {
+            return;
+        }
+        if (this.udpThread != null && this.udpThread.isAlive()) {
+            return;
+        }
+        Log.i(TAG, "UDP communication thread is not running, restarting");
+        var thread = new Thread(this.udpCom, "UDP Communication Thread");
+        this.udpThread = thread;
+        thread.start();
+    }
+
+    /**
      * 以前台服务方式运行，避免息屏或切到后台后被系统回收。
      * Android 12+ 在后台启动前台服务可能被拒，此时退回普通通知。
      */
@@ -545,6 +676,7 @@ public class ZeroTierOneService extends VpnService implements Runnable, EventLis
 
     public void onDestroy() {
         try {
+            unregisterNetworkMonitor();
             stopZeroTier();
             if (this.vpnSocket != null) {
                 try {

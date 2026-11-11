@@ -68,6 +68,18 @@ public class UdpCom implements PacketSender, Runnable {
                         this.ztService.setNextBackgroundTaskDeadline(jArr[0]);
                     }
                 } catch (SocketTimeoutException ignored) {
+                } catch (SocketException e) {
+                    // 网络切换或底层套接字被关闭时不要直接退出线程，否则节点将永久收不到包
+                    if (this.svrSocket.isClosed()) {
+                        Log.d(TAG, "UDP socket closed, stopping listen thread");
+                        break;
+                    }
+                    Log.w(TAG, "UDP receive failed, retrying: " + e);
+                    try {
+                        Thread.sleep(200);
+                    } catch (InterruptedException interrupted) {
+                        break;
+                    }
                 }
             }
         } catch (Exception e) {
