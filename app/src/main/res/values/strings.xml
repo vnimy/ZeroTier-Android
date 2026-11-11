@@ -174,4 +174,14 @@
     <string name="planet_sync_success">Planet updated from server.</string>
     <string name="planet_sync_failure">Planet download failed: %1$s</string>
     <string name="planet_sync_fallback">Planet download failed, using %1$s</string>
+    <string name="preferences_about">About</string>
+    <string name="check_update">Check for updates</string>
+    <string name="check_update_summary">Reads version.json from the planet server</string>
+    <string name="check_update_checking">Checking for updates…</string>
+    <string name="check_update_latest">You are on the latest version</string>
+    <string name="check_update_available">Version %1$s is available</string>
+    <string name="check_update_notes_empty">No release notes.</string>
+    <string name="check_update_open">Download</string>
+    <string name="check_update_failed">Update check failed</string>
+    <string name="check_update_no_server">Set the planet server address first</string>
 </resources>

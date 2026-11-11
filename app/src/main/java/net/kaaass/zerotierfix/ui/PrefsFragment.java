@@ -6,6 +6,7 @@ import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Bundle;
@@ -22,6 +23,7 @@ import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.core.content.ContextCompat;
+import androidx.core.content.pm.PackageInfoCompat;
 import androidx.preference.Preference;
 import androidx.preference.PreferenceFragmentCompat;
 import androidx.preference.SwitchPreference;
@@ -40,14 +42,19 @@ import net.kaaass.zerotierfix.util.FileUtil;
 import net.kaaass.zerotierfix.util.PlanetSyncer;
 
 import org.apache.commons.io.FileUtils;
+import org.json.JSONObject;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.SocketTimeoutException;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Objects;
 
@@ -58,6 +65,10 @@ public class PrefsFragment extends PreferenceFragmentCompat implements SharedPre
 
     public static final int PLANET_DOWNLOAD_CONN_TIMEOUT = 5 * 1000;
     public static final int PLANET_DOWNLOAD_TIMEOUT = 10 * 1000;
+    /**
+     * 检查更新请求的超时
+     */
+    private static final int UPDATE_MANIFEST_TIMEOUT = 6 * 1000;
     private static final String TAG = "PreferencesFragment";
     /**
      * Plant 文件固定头
@@ -183,6 +194,14 @@ public class PrefsFragment extends PreferenceFragmentCompat implements SharedPre
             showPlanetDialog();
             return true;
         });
+        // 检查更新
+        Preference prefCheckUpdate = findPreference(Constants.PREF_CHECK_UPDATE);
+        if (prefCheckUpdate != null) {
+            prefCheckUpdate.setOnPreferenceClickListener(preference -> {
+                checkForUpdates();
+                return true;
+            });
+        }
         updatePlanetSetting();
         updatePlanetServerSummary();
     }
@@ -542,5 +561,130 @@ public class PrefsFragment extends PreferenceFragmentCompat implements SharedPre
         if (this.loadingDialog != null) {
             this.loadingDialog.dismiss();
         }
+    }
+
+    /**
+     * 检查更新：从行星服务器根路径读取 version.json，与本机 versionCode 比较
+     */
+    private void checkForUpdates() {
+        if (!isAdded()) {
+            return;
+        }
+        Context context = requireContext();
+        String serverUrl = PreferenceManager.getDefaultSharedPreferences(context)
+                .getString(Constants.PREF_PLANET_SERVER_URL, "");
+        if (PlanetSyncer.normalizeUrl(serverUrl).isEmpty()) {
+            Toast.makeText(context, R.string.check_update_no_server, Toast.LENGTH_LONG).show();
+            return;
+        }
+        final String manifestUrl = updateManifestUrl(serverUrl);
+        Log.i(TAG, "Checking updates at " + manifestUrl);
+        Toast.makeText(context, R.string.check_update_checking, Toast.LENGTH_SHORT).show();
+        new Thread(() -> {
+            try {
+                JSONObject manifest = fetchUpdateManifest(manifestUrl);
+                final int latestCode = manifest.optInt("versionCode", 0);
+                final String latestName = manifest.optString("versionName", String.valueOf(latestCode));
+                final String notes = manifest.optString("notes", "");
+                final String downloadUrl = manifest.optString("url", "");
+                final int currentCode = currentVersionCode();
+                Log.i(TAG, "Update check: current=" + currentCode + ", latest=" + latestCode);
+                if (latestCode <= currentCode) {
+                    postOnUi(() -> Toast.makeText(requireContext(), R.string.check_update_latest,
+                            Toast.LENGTH_LONG).show());
+                    return;
+                }
+                postOnUi(() -> showUpdateDialog(latestName, notes, downloadUrl));
+            } catch (Exception e) {
+                Log.w(TAG, "Update check failed", e);
+                postOnUi(() -> Toast.makeText(requireContext(), R.string.check_update_failed,
+                        Toast.LENGTH_LONG).show());
+            }
+        }, "Update Check").start();
+    }
+
+    /**
+     * 行星服务器地址（可能带 /planet 路径）→ 同主机的 /version.json
+     */
+    private static String updateManifestUrl(String serverUrl) {
+        Uri uri = Uri.parse(PlanetSyncer.normalizeUrl(serverUrl));
+        String scheme = uri.getScheme() == null ? "http" : uri.getScheme();
+        String authority = uri.getAuthority() != null ? uri.getAuthority() : uri.getHost();
+        return scheme + "://" + authority + "/version.json";
+    }
+
+    private static JSONObject fetchUpdateManifest(String manifestUrl) throws IOException {
+        HttpURLConnection connection = null;
+        try {
+            connection = (HttpURLConnection) new URL(manifestUrl).openConnection();
+            connection.setConnectTimeout(UPDATE_MANIFEST_TIMEOUT);
+            connection.setReadTimeout(UPDATE_MANIFEST_TIMEOUT);
+            connection.setRequestProperty("Accept", "application/json");
+            int code = connection.getResponseCode();
+            if (code != HttpURLConnection.HTTP_OK) {
+                throw new IOException("HTTP " + code);
+            }
+            StringBuilder body = new StringBuilder();
+            try (BufferedReader reader = new BufferedReader(
+                    new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8))) {
+                char[] buffer = new char[512];
+                int read;
+                while ((read = reader.read(buffer)) > 0 && body.length() < 64 * 1024) {
+                    body.append(buffer, 0, read);
+                }
+            }
+            return new JSONObject(body.toString());
+        } catch (org.json.JSONException e) {
+            throw new IOException("invalid version.json", e);
+        } finally {
+            if (connection != null) {
+                connection.disconnect();
+            }
+        }
+    }
+
+    private int currentVersionCode() {
+        try {
+            PackageInfo info = requireContext().getPackageManager()
+                    .getPackageInfo(requireContext().getPackageName(), 0);
+            return (int) PackageInfoCompat.getLongVersionCode(info);
+        } catch (PackageManager.NameNotFoundException e) {
+            return 0;
+        }
+    }
+
+    private void showUpdateDialog(String versionName, String notes, String downloadUrl) {
+        if (!isAdded()) {
+            return;
+        }
+        AlertDialog.Builder builder = new AlertDialog.Builder(requireContext())
+                .setTitle(getString(R.string.check_update_available, versionName))
+                .setMessage(notes.trim().isEmpty()
+                        ? getString(R.string.check_update_notes_empty) : notes.trim())
+                .setNegativeButton(android.R.string.cancel, null);
+        if (!downloadUrl.trim().isEmpty()) {
+            builder.setPositiveButton(R.string.check_update_open, (dialog, which) -> {
+                try {
+                    startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(downloadUrl.trim())));
+                } catch (Exception e) {
+                    Log.w(TAG, "Cannot open " + downloadUrl, e);
+                }
+            });
+        }
+        builder.show();
+    }
+
+    /**
+     * 后台线程回到 UI 线程，fragment 已分离时静默丢弃
+     */
+    private void postOnUi(Runnable action) {
+        if (!isAdded()) {
+            return;
+        }
+        requireActivity().runOnUiThread(() -> {
+            if (isAdded()) {
+                action.run();
+            }
+        });
     }
 }

@@ -29,4 +29,10 @@
             android:summary="@string/preferences_network_disable_ipv6_summary"
             android:title="@string/preferences_network_disable_ipv6" />
     </PreferenceCategory>
+    <PreferenceCategory android:title="@string/preferences_about">
+        <Preference
+            android:key="check_update"
+            android:summary="@string/check_update_summary"
+            android:title="@string/check_update" />
+    </PreferenceCategory>
 </PreferenceScreen>

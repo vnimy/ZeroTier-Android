@@ -29,6 +29,11 @@ public class Constants {
     public static final String PREF_PLANET_SERVER_URL = "planet_server_url";
 
     /**
+     * 设置页「检查更新」入口
+     */
+    public static final String PREF_CHECK_UPDATE = "check_update";
+
+    /**
      * 行星服务器下载 token（可选）
      */
     public static final String PREF_PLANET_SERVER_TOKEN = "planet_server_token";
