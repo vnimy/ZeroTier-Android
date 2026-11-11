@@ -1,2 +1,29 @@
-<?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android" android:id="@+id/fragmentContainer" android:layout_width="match_parent" android:layout_height="match_parent"/>
+﻿<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <!-- 仅用于填充状态栏区域，高度由代码设为状态栏 inset；与标题栏同为页面底色 -->
+    <View
+        android:id="@+id/statusBarScrim"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:background="?android:attr/windowBackground" />
+
+    <androidx.appcompat.widget.Toolbar
+        android:id="@+id/toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        android:background="?android:attr/windowBackground"
+        app:popupTheme="@style/Theme.ZerotierFix.PopupOverlay"
+        app:titleTextColor="?android:attr/textColorPrimary" />
+
+    <FrameLayout
+        android:id="@+id/fragmentContainer"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
+</LinearLayout>

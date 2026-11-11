@@ -9,11 +9,14 @@
         <item name="colorSecondary">@color/teal_200</item>
         <item name="colorSecondaryVariant">@color/teal_200</item>
         <item name="colorOnSecondary">@color/black</item>
-        <!-- Status bar color. -->
-        <item name="android:statusBarColor" tools:targetApi="l">?attr/colorPrimaryVariant</item>
+        <!-- 状态栏透明：edge-to-edge 下由标题栏背景铺满状态栏区域 -->
+        <item name="android:statusBarColor" tools:targetApi="l">@android:color/transparent</item>
         <!-- Customize your theme here. -->
         <item name="greyText">@color/grey_text_night</item>
         <item name="lightGreyText">@color/light_grey_text_night</item>
         <item name="tableRowGrey">@color/table_row_grey_night</item>
     </style>
+
+    <!-- 夜间：弹窗背景来自深色主题，文字必须是浅色，否则黑底黑字 -->
+    <style name="Theme.ZerotierFix.PopupOverlay" parent="ThemeOverlay.AppCompat.Dark" />
 </resources>
