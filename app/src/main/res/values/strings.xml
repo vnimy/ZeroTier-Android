@@ -26,6 +26,15 @@
     <string name="network_id">Network ID:</string>
     <string name="network_id_string">Network ID:</string>
     <string name="network_ips">Managed IPs</string>
+    <string name="network_routes">Routes</string>
+    <string name="network_no_routes">None</string>
+    <string name="route_default">default</string>
+    <string name="planet_scan_qr">Import from QR code</string>
+    <string name="planet_scan_qr_summary">Scan a QR code containing the planet URL (and optional token)</string>
+    <string name="planet_qr_prompt">Place the planet QR code inside the frame</string>
+    <string name="planet_qr_need_camera">Camera permission is required to scan</string>
+    <string name="planet_qr_invalid">The QR code does not contain a valid planet URL</string>
+    <string name="planet_qr_imported">Planet server imported, syncing…</string>
     <string name="network_mac">MAC</string>
     <string name="network_mtu">MTU</string>
     <string name="network_dns_mode">DNS Mode</string>

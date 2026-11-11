@@ -54,6 +54,7 @@ public class NetworkDetailFragment extends Fragment {
     private TextView ipAddressesView;
     private TableRow dnsView;
     private TextView dnsServersView;
+    private TextView routesView;
 
 
     @Override
@@ -90,6 +91,7 @@ public class NetworkDetailFragment extends Fragment {
         this.ipAddressesView = view.findViewById(R.id.network_ipaddresses_textview);
         this.dnsView = view.findViewById(R.id.custom_dns_row);
         this.dnsServersView = view.findViewById(R.id.network_dns_textview);
+        this.routesView = view.findViewById(R.id.network_routes_textview);
 
         // 设置回调
         this.routeViaZtView.setOnCheckedChangeListener((buttonView, isChecked) ->
@@ -175,6 +177,43 @@ public class NetworkDetailFragment extends Fragment {
             }
         }
         this.ipAddressesView.setText(strAssignedAddresses.toString());
+
+        // 网络推送的路由（目标 → 网关）
+        var routes = virtualNetworkConfig.getRoutes();
+        var strRoutes = new StringBuilder();
+
+        if (routes != null) {
+            for (var route : routes) {
+                var target = route.getTarget();
+                if (target == null || target.getAddress() == null) {
+                    continue;
+                }
+
+                var strRoute = inetSocketAddressToString(target);
+                if (strRoute == null) {
+                    // 关闭 IPv6 时隐藏 IPv6 路由
+                    continue;
+                }
+
+                var via = route.getVia();
+                if (via != null && via.getAddress() != null) {
+                    strRoute += "  →  " + via.getAddress().getHostAddress();
+                }
+
+                if (target.getPort() == 0 && target.getAddress().isAnyLocalAddress()) {
+                    strRoute += "  (" + getString(R.string.route_default) + ")";
+                }
+
+                if (strRoutes.length() > 0) {
+                    strRoutes.append('\n');
+                }
+                strRoutes.append(strRoute);
+            }
+        }
+
+        this.routesView.setText(strRoutes.length() > 0
+                ? strRoutes.toString()
+                : getString(R.string.network_no_routes));
 
         // DNS 服务地址
         var dns = virtualNetworkConfig.getDns();

@@ -163,4 +163,13 @@
     <string name="planet_sync_failure">Planet 下载失败：%1$s</string>
     <string name="planet_sync_fallback">Planet 下载失败，当前使用%1$s</string>
     <string name="notification_action_disconnect">断开连接</string>
+    <string name="network_routes">路由</string>
+    <string name="network_no_routes">无</string>
+    <string name="route_default">默认路由</string>
+    <string name="planet_scan_qr">扫描二维码导入</string>
+    <string name="planet_scan_qr_summary">扫描包含行星服务器地址的二维码（可带 token）</string>
+    <string name="planet_qr_prompt">把行星服务器二维码放入取景框内</string>
+    <string name="planet_qr_need_camera">需要相机权限才能扫码</string>
+    <string name="planet_qr_invalid">二维码里不是有效的行星服务器地址</string>
+    <string name="planet_qr_imported">已导入行星服务器，正在同步…</string>
 </resources>

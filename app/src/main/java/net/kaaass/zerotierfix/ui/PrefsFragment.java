@@ -2,9 +2,11 @@ package net.kaaass.zerotierfix.ui;
 
 import android.app.AlertDialog;
 import android.app.Dialog;
+import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
@@ -19,12 +21,16 @@ import android.widget.Toast;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
+import androidx.core.content.ContextCompat;
 import androidx.preference.Preference;
 import androidx.preference.PreferenceFragmentCompat;
 import androidx.preference.SwitchPreference;
 
 import com.google.android.material.snackbar.BaseTransientBottomBar;
 import com.google.android.material.snackbar.Snackbar;
+import com.journeyapps.barcodescanner.ScanContract;
+import com.journeyapps.barcodescanner.ScanIntentResult;
+import com.journeyapps.barcodescanner.ScanOptions;
 
 import net.kaaass.zerotierfix.R;
 import net.kaaass.zerotierfix.service.PlanetSyncManager;
@@ -65,6 +71,8 @@ public class PrefsFragment extends PreferenceFragmentCompat implements SharedPre
     private Dialog planetDialog = null;
     private Dialog loadingDialog = null;
     private ActivityResultLauncher<Intent> planetFileSelectLauncher = null;
+    private ActivityResultLauncher<ScanOptions> qrScanLauncher = null;
+    private ActivityResultLauncher<String> cameraPermissionLauncher = null;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -112,6 +120,18 @@ public class PrefsFragment extends PreferenceFragmentCompat implements SharedPre
                 Toast.makeText(getContext(), R.string.cannot_open_planet, Toast.LENGTH_LONG).show();
             }
         });
+
+        // 初始化二维码扫描回调和相机权限回调
+        this.qrScanLauncher = registerForActivityResult(new ScanContract(), this::onQrScanResult);
+        this.cameraPermissionLauncher = registerForActivityResult(
+                new ActivityResultContracts.RequestPermission(),
+                granted -> {
+                    if (granted) {
+                        startQrScan();
+                    } else {
+                        Toast.makeText(getContext(), R.string.planet_qr_need_camera, Toast.LENGTH_LONG).show();
+                    }
+                });
     }
 
     @Override
@@ -144,6 +164,20 @@ public class PrefsFragment extends PreferenceFragmentCompat implements SharedPre
             return true;
         });
 
+        // 扫描二维码导入行星服务器地址
+        Preference prefScanQr = findPreference(Constants.PREF_PLANET_SCAN_QR);
+        if (prefScanQr != null) {
+            prefScanQr.setOnPreferenceClickListener(preference -> {
+                if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.CAMERA)
+                        == PackageManager.PERMISSION_GRANTED) {
+                    startQrScan();
+                } else {
+                    this.cameraPermissionLauncher.launch(Manifest.permission.CAMERA);
+                }
+                return true;
+            });
+        }
+
         // 打开 Plant 文件设置
         Objects.requireNonNull(this.prefSetPlanetFile).setOnPreferenceClickListener(preference -> {
             showPlanetDialog();
@@ -151,6 +185,64 @@ public class PrefsFragment extends PreferenceFragmentCompat implements SharedPre
         });
         updatePlanetSetting();
         updatePlanetServerSummary();
+    }
+
+    /**
+     * 启动二维码扫描
+     */
+    private void startQrScan() {
+        ScanOptions options = new ScanOptions();
+        options.setDesiredBarcodeFormats(ScanOptions.QR_CODE);
+        options.setPrompt(getString(R.string.planet_qr_prompt));
+        options.setBeepEnabled(false);
+        options.setOrientationLocked(false);
+        this.qrScanLauncher.launch(options);
+    }
+
+    /**
+     * 处理二维码结果：二维码内容形如 https://host/planet?token=xxx
+     */
+    private void onQrScanResult(ScanIntentResult result) {
+        String contents = result.getContents();
+        if (contents == null) {
+            return;
+        }
+
+        String raw = contents.trim();
+        if (!raw.contains("://")) {
+            raw = "http://" + raw;
+        }
+
+        Uri uri;
+        try {
+            uri = Uri.parse(raw);
+        } catch (Exception e) {
+            Log.e(TAG, "Invalid QR content", e);
+            Toast.makeText(getContext(), R.string.planet_qr_invalid, Toast.LENGTH_LONG).show();
+            return;
+        }
+
+        String host = uri.getHost();
+        if (host == null || host.isEmpty()) {
+            Toast.makeText(getContext(), R.string.planet_qr_invalid, Toast.LENGTH_LONG).show();
+            return;
+        }
+
+        // token 是可选查询参数，去掉后剩下的就是 planet 下载地址
+        String token = uri.getQueryParameter("token");
+        String url = uri.buildUpon().clearQuery().fragment(null).build().toString();
+
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(requireContext());
+        SharedPreferences.Editor editor = preferences.edit()
+                .putString(Constants.PREF_PLANET_SERVER_URL, url);
+        if (token != null && !token.trim().isEmpty()) {
+            editor.putString(Constants.PREF_PLANET_SERVER_TOKEN, token.trim());
+        }
+        editor.apply();
+
+        updatePlanetServerSummary();
+        Toast.makeText(getContext(), R.string.planet_qr_imported, Toast.LENGTH_SHORT).show();
+        syncPlanetFromServer();
     }
 
     /**

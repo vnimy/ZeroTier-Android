@@ -42,6 +42,7 @@ public class Constants {
      * 可选的 planet 文件 sha256 校验值
      */
     public static final String PREF_PLANET_SERVER_SHA256 = "planet_server_sha256";
+    public static final String PREF_PLANET_SCAN_QR = "planet_scan_qr";
 
     /**
      * 上次成功下载 planet 的时间戳（毫秒）
