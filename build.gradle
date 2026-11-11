@@ -1,12 +1,16 @@
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 buildscript {
     repositories {
+        // 国内镜像优先，命中失败时 Gradle 会自动回落到 google()/mavenCentral()
+        maven { url 'https://maven.aliyun.com/repository/google' }
+        maven { url 'https://maven.aliyun.com/repository/public' }
         google()
         mavenCentral()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:7.4.2'
-        classpath "org.greenrobot:greendao-gradle-plugin:3.3.0"
+        classpath 'com.android.tools.build:gradle:8.6.1'
+        // 3.3.0 使用 Gradle 8 已移除的 IncrementalTaskInputs，必须用 3.3.1
+        classpath "org.greenrobot:greendao-gradle-plugin:3.3.1"
 
         // NOTE: Do not place your application dependencies here; they belong
         // in the individual module build.gradle files
@@ -15,17 +19,20 @@ buildscript {
 
 allprojects {
     repositories {
+        maven { url 'https://maven.aliyun.com/repository/google' }
+        maven { url 'https://maven.aliyun.com/repository/public' }
         google()
         mavenCentral()
     }
 }
 
 ext {
-    compileSdkVersion = 33
-    minSdkVersion = 19
-    targetSdkVersion = 33
+    compileSdkVersion = 35
+    // NDK r28 只支持 API 21+（meta/platforms.json: min=21），因此 minSdk 从 19 上调到 21
+    minSdkVersion = 21
+    targetSdkVersion = 35
 }
 
-task clean(type: Delete) {
-    delete rootProject.buildDir
+tasks.register('clean', Delete) {
+    delete rootProject.layout.buildDirectory
 }

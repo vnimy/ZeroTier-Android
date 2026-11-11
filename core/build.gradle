@@ -2,14 +2,23 @@ plugins {
     id 'com.android.library'
 }
 
+// NDK 由 local.properties 的 ndk.dir 指定（SDK 内 NDK 目录名是 android-ndk-r28c 而不是版本号，
+// 只写 ndkVersion 时 AGP 会去 ndk/28.2.13676358 找并在找不到时尝试安装）
 android {
-    compileSdkVersion rootProject.ext.compileSdkVersion
+    namespace 'com.zerotier.sdk'
+    compileSdk rootProject.ext.compileSdkVersion
+    buildToolsVersion '35.0.0'
+    ndkVersion '28.2.13676358'
 
     defaultConfig {
-        minSdkVersion rootProject.ext.minSdkVersion
-        targetSdkVersion rootProject.ext.targetSdkVersion
+        minSdk rootProject.ext.minSdkVersion
+        targetSdk rootProject.ext.targetSdkVersion
         versionCode 1
         versionName "1.0"
+        // 交付产物面向手机，只构建两个 ARM ABI（同时显著缩短内核编译时间）
+        ndk {
+            abiFilters 'arm64-v8a', 'armeabi-v7a'
+        }
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -25,9 +34,18 @@ android {
         targetCompatibility JavaVersion.VERSION_1_8
     }
 
+    // 上游用软链接把 core/src/main/java 指向 externals/core/java/src，
+    // Windows 检出会把软链接落成普通文本文件，这里显式声明源码目录。
+    sourceSets {
+        main {
+            java.srcDirs = ['../externals/core/java/src']
+        }
+    }
+
     externalNativeBuild {
         cmake {
             path file('../externals/core/java/CMakeLists.txt')
+            // 实际使用的 CMake 由 local.properties 的 cmake.dir 指定（3.22.1）
             version '3.22.1'
         }
     }
