@@ -1,6 +1,8 @@
 package com.vnimy.zerotier.ui;
 
+import android.Manifest;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.text.Editable;
@@ -13,11 +15,18 @@ import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.EditText;
+import android.widget.Toast;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.viewpager.widget.ViewPager;
 
 import com.google.android.material.tabs.TabLayout;
+import com.journeyapps.barcodescanner.ScanContract;
+import com.journeyapps.barcodescanner.ScanIntentResult;
+import com.journeyapps.barcodescanner.ScanOptions;
 
 import com.vnimy.zerotier.ZeroTierApplication;
 import com.vnimy.zerotier.R;
@@ -50,10 +59,23 @@ public class JoinNetworkFragment extends Fragment implements CustomDNSListener {
     private CheckBox mDefaultRouteCheckBox;
     private Button mJoinButton;
     private EditText mNetworkIdTextView;
+    private ActivityResultLauncher<ScanOptions> qrScanLauncher;
+    private ActivityResultLauncher<String> cameraPermissionLauncher;
 
     @Override // androidx.fragment.app.Fragment
     public void onCreate(Bundle bundle) {
         super.onCreate(bundle);
+        this.qrScanLauncher = registerForActivityResult(new ScanContract(), this::onQrScanResult);
+        this.cameraPermissionLauncher = registerForActivityResult(
+                new ActivityResultContracts.RequestPermission(),
+                granted -> {
+                    if (granted) {
+                        startQrScan();
+                    } else {
+                        Toast.makeText(requireContext(),
+                                R.string.network_qr_need_camera, Toast.LENGTH_LONG).show();
+                    }
+                });
     }
 
     @Override // androidx.fragment.app.Fragment
@@ -92,6 +114,15 @@ public class JoinNetworkFragment extends Fragment implements CustomDNSListener {
             public void onTabSelected(TabLayout.Tab tab) {
                 Log.d(JoinNetworkFragment.TAG, "Tab " + tab.getPosition() + " Selected");
                 JoinNetworkFragment.this.mDNSMode = tab.getPosition();
+            }
+        });
+        Button scanButton = inflate.findViewById(R.id.button_scan_network_qr);
+        scanButton.setOnClickListener(view -> {
+            if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.CAMERA)
+                    == PackageManager.PERMISSION_GRANTED) {
+                startQrScan();
+            } else {
+                this.cameraPermissionLauncher.launch(Manifest.permission.CAMERA);
             }
         });
         EditText editText = inflate.findViewById(R.id.join_network_edit_text);
@@ -207,6 +238,31 @@ public class JoinNetworkFragment extends Fragment implements CustomDNSListener {
             }
         });
         return inflate;
+    }
+
+    private void startQrScan() {
+        ScanOptions options = new ScanOptions();
+        options.setDesiredBarcodeFormats(ScanOptions.QR_CODE);
+        options.setPrompt(getString(R.string.network_qr_prompt));
+        options.setBeepEnabled(false);
+        options.setOrientationLocked(false);
+        this.qrScanLauncher.launch(options);
+    }
+
+    private void onQrScanResult(ScanIntentResult result) {
+        if (result == null) {
+            return;
+        }
+        String networkId = NetworkIdUtils.extractNetworkId(result.getContents());
+        if (networkId == null) {
+            Toast.makeText(requireContext(),
+                    R.string.network_qr_invalid, Toast.LENGTH_LONG).show();
+            return;
+        }
+        this.mNetworkIdTextView.setText(networkId);
+        this.mNetworkIdTextView.setSelection(networkId.length());
+        Toast.makeText(requireContext(),
+                getString(R.string.network_qr_recognized, networkId), Toast.LENGTH_SHORT).show();
     }
 
     @Override // com.zerotier.one.ui.CustomDNSListener

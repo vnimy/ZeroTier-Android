@@ -19,6 +19,11 @@
     <string name="mac_label">MAC:</string>
     <string name="menu_join_network">Add Network</string>
     <string name="network_bridging">Bridging</string>
+    <string name="network_qr_invalid">No valid ZeroTier network ID found in the QR code</string>
+    <string name="network_qr_need_camera">Camera permission is required to scan</string>
+    <string name="network_qr_prompt">Place the network QR code inside the frame</string>
+    <string name="network_qr_recognized">Network ID recognized: %1$s</string>
+    <string name="network_scan_qr">Scan QR code</string>
     <string name="network_broadcast">Broadcast</string>
     <string name="network_default_route">Route Via ZeroTier</string>
     <string name="network_dns_tab_title">Network DNS</string>

@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/fragmentJoinNetwork"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -28,11 +29,24 @@
         android:textCursorDrawable="@null"
         android:autofillHints="" />
 
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/button_scan_network_qr"
+        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/join_network_edit_text"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="8dp"
+        android:text="@string/network_scan_qr"
+        app:icon="@drawable/ic_qr_scan"
+        app:iconGravity="textStart"
+        app:iconTint="?attr/colorPrimary" />
+
     <CheckBox
         android:id="@+id/join_network_default_route"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_below="@+id/join_network_edit_text"
+        android:layout_below="@+id/button_scan_network_qr"
         android:text="@string/default_route" />
 
     <TextView

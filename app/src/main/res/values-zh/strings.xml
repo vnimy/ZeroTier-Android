@@ -18,6 +18,11 @@
     <string name="mac_label">MAC:</string>
     <string name="menu_join_network">添加网络</string>
     <string name="network_bridging">网络桥接</string>
+    <string name="network_qr_invalid">二维码中没有有效的 ZeroTier 网络 ID</string>
+    <string name="network_qr_need_camera">扫描需要相机权限</string>
+    <string name="network_qr_prompt">将网络二维码放入取景框内</string>
+    <string name="network_qr_recognized">已识别网络 ID：%1$s</string>
+    <string name="network_scan_qr">扫描二维码</string>
     <string name="network_broadcast">广播</string>
     <string name="network_default_route">通过 ZeroTier 路由</string>
     <string name="network_dns_tab_title">网络 DNS</string>
