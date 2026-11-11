@@ -1,9 +1,9 @@
 <h1 align="center">
-  <img src="https://github.com/kaaass/ZerotierFix/blob/master/app/src/main/ic_launcher-playstore.png?raw=true" alt="Zerotier Fix" width="200">
-  <br>Zerotier Fix<br>
+  <img src="https://github.com/kaaass/ZerotierFix/blob/master/app/src/main/ic_launcher-playstore.png?raw=true" alt="ZeroTier" width="200">
+  <br>ZeroTier<br>
 </h1>
 
-<h4 align="center">An unofficial Zerotier Android client patched from official client.</h4>
+<h4 align="center">An unofficial ZeroTier Android client based on the official client.</h4>
 
 <p align="center">
   <img src="screenshots/main.png" alt="main" width="150"/>
@@ -26,10 +26,9 @@
 
 ## Download
 
-Check [Releases page](https://github.com/kaaass/ZerotierFix/releases) for latest version.
+Download the latest APK from [zt.vnimy.com](https://zt.vnimy.com/app/zerotier.apk).
 
-If you want to try the nightly build, you can download it from [GitHub Actions](https://github.com/kaaass/ZerotierFix/actions/workflows/build-app.yml?query=branch%3Amaster).
-But please note that the nightly build may be **BUGGY** and **UNSTABLE**.
+The app checks the same server for updates automatically.
 
 ## Copyright
 
@@ -37,7 +36,7 @@ The code for this repository is based on the reverse engineering of the official
 original author is Grant Limberg (glimberg@gmail.com). See [AUTHORS.md](https://github.com/zerotier/ZeroTierOne/blob/master/AUTHORS.md#primary-authors) for more details.
 
 - Zerotier JNI Sdk is located in git submodule `externals/core`
-- Original Android client code is located in `net.kaaass.zerotierfix` (renamed from `com.zerotier.one`)
+- Original Android client code is located in `com.vnimy.zerotier` (renamed from `com.zerotier.one`)
 - App logo is a trademark of `ZeroTier, Inc.` and made by myself. 
 
 

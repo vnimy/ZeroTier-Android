@@ -5,7 +5,7 @@ plugins {
 
 greendao {
     schemaVersion 22
-    daoPackage 'net.kaaass.zerotierfix.model'
+    daoPackage 'com.vnimy.zerotier.model'
 }
 
 android {
@@ -13,11 +13,11 @@ android {
     buildToolsVersion '35.0.0'
 
     defaultConfig {
-        applicationId "net.kaaass.zerotierfix"
+        applicationId "com.vnimy.zerotier"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 17
-        versionName "1.0.13"
+        versionCode 18
+        versionName "2.0.0"
         multiDexEnabled true
 
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
@@ -45,7 +45,7 @@ android {
             exclude module: 'commons-logging'
         }
     }
-    namespace 'net.kaaass.zerotierfix'
+    namespace 'com.vnimy.zerotier'
 }
 
 dependencies {

@@ -1,6 +1,6 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <!-- Base application theme. -->
-    <style name="Theme.ZerotierFix" parent="Theme.MaterialComponents.DayNight.DarkActionBar">
+    <style name="Theme.ZeroTier" parent="Theme.MaterialComponents.DayNight.DarkActionBar">
         <!-- Primary brand color. -->
         <item name="colorPrimary">@color/purple_200</item>
         <item name="colorPrimaryVariant">@color/purple_700</item>
@@ -18,5 +18,5 @@
     </style>
 
     <!-- 夜间：弹窗背景来自深色主题，文字必须是浅色，否则黑底黑字 -->
-    <style name="Theme.ZerotierFix.PopupOverlay" parent="ThemeOverlay.AppCompat.Dark" />
+    <style name="Theme.ZeroTier.PopupOverlay" parent="ThemeOverlay.AppCompat.Dark" />
 </resources>

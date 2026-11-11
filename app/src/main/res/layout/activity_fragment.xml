@@ -18,7 +18,7 @@
         android:layout_width="match_parent"
         android:layout_height="?attr/actionBarSize"
         android:background="?android:attr/windowBackground"
-        app:popupTheme="@style/Theme.ZerotierFix.PopupOverlay"
+        app:popupTheme="@style/Theme.ZeroTier.PopupOverlay"
         app:titleTextColor="?android:attr/textColorPrimary" />
 
     <FrameLayout
