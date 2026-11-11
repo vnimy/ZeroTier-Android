@@ -6,6 +6,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.net.VpnService;
 import android.os.Build;
+import android.os.Handler;
+import android.os.Looper;
 import android.preference.PreferenceManager;
 import android.service.quicksettings.Tile;
 import android.service.quicksettings.TileService;
@@ -19,6 +21,8 @@ import com.vnimy.zerotier.ZeroTierApplication;
 import com.vnimy.zerotier.model.NetworkDao;
 import com.vnimy.zerotier.ui.NetworkListActivity;
 import com.vnimy.zerotier.util.Constants;
+
+import java.lang.ref.WeakReference;
 
 /**
  * 快捷设置磁贴：在通知面板下拉后提供类似飞行模式的 ZeroTier 连接开关。
@@ -39,6 +43,14 @@ public class ZeroTierTileService extends TileService {
      */
     private static final long CONNECT_REQUEST_TTL_MS = 15_000L;
 
+    /**
+     * 当前正在监听（下拉面板已打开）的磁贴实例。面板打开期间直接刷新这个实例，
+     * 避免依赖 requestListeningState 导致状态要等面板重新打开才更新。
+     */
+    private static WeakReference<ZeroTierTileService> sInstance;
+
+    private static final Handler MAIN_HANDLER = new Handler(Looper.getMainLooper());
+
     @Override
     public void onTileAdded() {
         super.onTileAdded();
@@ -48,18 +60,40 @@ public class ZeroTierTileService extends TileService {
     @Override
     public void onStartListening() {
         super.onStartListening();
+        sInstance = new WeakReference<>(this);
         updateTile();
+    }
+
+    @Override
+    public void onStopListening() {
+        super.onStopListening();
+        clearInstance(this);
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        clearInstance(this);
+    }
+
+    private static void clearInstance(ZeroTierTileService service) {
+        WeakReference<ZeroTierTileService> ref = sInstance;
+        if (ref != null && ref.get() == service) {
+            sInstance = null;
+        }
     }
 
     @Override
     public void onClick() {
         int state = ZeroTierOneService.getConnectionState();
         if (state != ZeroTierOneService.STATE_IDLE) {
-            // 已连接或正在连接：断开（与通知栏「断开」按钮相同的清理流程）
+            // 已连接或正在连接：先立刻把磁贴画成断开状态，再交给服务清理
             Log.i(TAG, "Disconnect requested from quick settings tile");
+            updateTile(ZeroTierOneService.STATE_IDLE);
             if (!tryStartService(new Intent(this, ZeroTierOneService.class)
                     .setAction(ZeroTierOneService.ACTION_DISCONNECT))) {
                 // 后台启动受限时至少让用户能回到 App 操作
+                updateTile();
                 openApp();
             }
             return;
@@ -77,7 +111,9 @@ public class ZeroTierTileService extends TileService {
         if (VpnService.prepare(this) == null) {
             // 已授予 VPN 权限，直接连接，无需打开 App
             Log.i(TAG, "Connect requested from quick settings tile");
+            updateTile(ZeroTierOneService.STATE_CONNECTING);
             if (!tryStartService(startIntent)) {
+                updateTile();
                 saveConnectRequest(networkId);
                 openApp();
             }
@@ -93,11 +129,14 @@ public class ZeroTierTileService extends TileService {
      * 刷新磁贴的亮灭状态与副标题。
      */
     private void updateTile() {
+        updateTile(ZeroTierOneService.getConnectionState());
+    }
+
+    private void updateTile(int state) {
         Tile tile = getQsTile();
         if (tile == null) {
             return;
         }
-        int state = ZeroTierOneService.getConnectionState();
         tile.setState(state == ZeroTierOneService.STATE_IDLE
                 ? Tile.STATE_INACTIVE
                 : Tile.STATE_ACTIVE);
@@ -177,6 +216,21 @@ public class ZeroTierTileService extends TileService {
             Log.w(TAG, "Failed to start ZeroTier service from tile", e);
             return false;
         }
+    }
+
+    /**
+     * 让当前可见的磁贴立即刷新；面板未打开时再请求系统回调 onStartListening。
+     */
+    public static void refreshTile(Context context) {
+        MAIN_HANDLER.post(() -> {
+            WeakReference<ZeroTierTileService> ref = sInstance;
+            ZeroTierTileService service = ref != null ? ref.get() : null;
+            if (service != null && service.getQsTile() != null) {
+                service.updateTile();
+            } else {
+                requestTileRefresh(context);
+            }
+        });
     }
 
     /**

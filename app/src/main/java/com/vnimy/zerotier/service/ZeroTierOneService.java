@@ -631,7 +631,7 @@ public class ZeroTierOneService extends VpnService implements Runnable, EventLis
         connectionState = state;
         Log.d(TAG, "Connection state changed to " + state);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            ZeroTierTileService.requestTileRefresh(getApplicationContext());
+            ZeroTierTileService.refreshTile(getApplicationContext());
         }
     }
 
