@@ -11,6 +11,7 @@ import android.preference.PreferenceManager;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -26,9 +27,11 @@ import com.google.android.material.snackbar.BaseTransientBottomBar;
 import com.google.android.material.snackbar.Snackbar;
 
 import net.kaaass.zerotierfix.R;
+import net.kaaass.zerotierfix.service.PlanetSyncManager;
 import net.kaaass.zerotierfix.service.ZeroTierOneService;
 import net.kaaass.zerotierfix.util.Constants;
 import net.kaaass.zerotierfix.util.FileUtil;
+import net.kaaass.zerotierfix.util.PlanetSyncer;
 
 import org.apache.commons.io.FileUtils;
 
@@ -58,6 +61,7 @@ public class PrefsFragment extends PreferenceFragmentCompat implements SharedPre
     };
     private SwitchPreference prefPlanetUseCustom;
     private Preference prefSetPlanetFile;
+    private Preference prefPlanetServer;
     private Dialog planetDialog = null;
     private Dialog loadingDialog = null;
     private ActivityResultLauncher<Intent> planetFileSelectLauncher = null;
@@ -116,6 +120,13 @@ public class PrefsFragment extends PreferenceFragmentCompat implements SharedPre
 
         this.prefPlanetUseCustom = findPreference(Constants.PREF_PLANET_USE_CUSTOM);
         this.prefSetPlanetFile = findPreference(Constants.PREF_SET_PLANET_FILE);
+        this.prefPlanetServer = findPreference(Constants.PREF_PLANET_SERVER_URL);
+
+        // 行星服务器（自动下载 planet）配置
+        Objects.requireNonNull(this.prefPlanetServer).setOnPreferenceClickListener(preference -> {
+            showPlanetServerDialog();
+            return true;
+        });
 
         // Plane 配置开关
         Objects.requireNonNull(this.prefPlanetUseCustom).setOnPreferenceClickListener(preference -> {
@@ -139,6 +150,98 @@ public class PrefsFragment extends PreferenceFragmentCompat implements SharedPre
             return true;
         });
         updatePlanetSetting();
+        updatePlanetServerSummary();
+    }
+
+    /**
+     * 更新行星服务器设置项的摘要
+     */
+    private void updatePlanetServerSummary() {
+        if (this.prefPlanetServer == null) {
+            return;
+        }
+        String url = PlanetSyncer.normalizeUrl(PreferenceManager
+                .getDefaultSharedPreferences(requireContext())
+                .getString(Constants.PREF_PLANET_SERVER_URL, ""));
+        if (url.isEmpty()) {
+            this.prefPlanetServer.setSummary(R.string.planet_server_summary);
+        } else {
+            this.prefPlanetServer.setSummary(url);
+        }
+    }
+
+    /**
+     * 显示行星服务器配置对话框：地址 + token + sha256 + 自动更新
+     */
+    private void showPlanetServerDialog() {
+        View view = LayoutInflater.from(getContext()).inflate(R.layout.dialog_planet_server, null);
+        final EditText urlInput = view.findViewById(R.id.planet_server_url_input);
+        final EditText tokenInput = view.findViewById(R.id.planet_server_token_input);
+        final EditText sha256Input = view.findViewById(R.id.planet_server_sha256_input);
+        final CheckBox autoUpdate = view.findViewById(R.id.planet_server_auto_update);
+
+        final SharedPreferences preferences = PreferenceManager
+                .getDefaultSharedPreferences(requireContext());
+        urlInput.setText(preferences.getString(Constants.PREF_PLANET_SERVER_URL, ""));
+        tokenInput.setText(preferences.getString(Constants.PREF_PLANET_SERVER_TOKEN, ""));
+        sha256Input.setText(preferences.getString(Constants.PREF_PLANET_SERVER_SHA256, ""));
+        autoUpdate.setChecked(preferences.getBoolean(Constants.PREF_PLANET_SERVER_AUTO_UPDATE, false));
+
+        new AlertDialog.Builder(getContext())
+                .setView(view)
+                .setTitle(R.string.planet_server)
+                .setPositiveButton(R.string.planet_server_save_and_sync, (dialog, which) -> {
+                    String url = PlanetSyncer.normalizeUrl(urlInput.getText().toString());
+                    preferences.edit()
+                            .putString(Constants.PREF_PLANET_SERVER_URL, url)
+                            .putString(Constants.PREF_PLANET_SERVER_TOKEN,
+                                    tokenInput.getText().toString().trim())
+                            .putString(Constants.PREF_PLANET_SERVER_SHA256,
+                                    sha256Input.getText().toString().trim())
+                            .putBoolean(Constants.PREF_PLANET_SERVER_AUTO_UPDATE, autoUpdate.isChecked())
+                            .apply();
+                    updatePlanetServerSummary();
+                    if (url.isEmpty()) {
+                        // 清空地址即恢复原有行为，不做任何下载
+                        Toast.makeText(getContext(), R.string.planet_server_cleared,
+                                Toast.LENGTH_LONG).show();
+                        return;
+                    }
+                    syncPlanetFromServer();
+                })
+                .setNegativeButton(android.R.string.cancel, null)
+                .create()
+                .show();
+    }
+
+    /**
+     * 立即从行星服务器同步一次 planet 文件
+     */
+    private void syncPlanetFromServer() {
+        showLoadingDialog(R.string.downloading);
+        new Thread(() -> {
+            final PlanetSyncer.Result result = PlanetSyncManager.syncNow(requireContext());
+            if (!isAdded()) {
+                return;
+            }
+            requireActivity().runOnUiThread(() -> {
+                closeLoadingDialog();
+                if (result.success) {
+                    Snackbar.make(requireView(), R.string.planet_sync_success,
+                            BaseTransientBottomBar.LENGTH_LONG).show();
+                } else {
+                    Toast.makeText(getContext(),
+                            getString(R.string.planet_sync_failure, result.message),
+                            Toast.LENGTH_LONG).show();
+                }
+                // 同步成功会打开自定义 planet 开关，这里刷新界面
+                this.prefPlanetUseCustom.setChecked(PreferenceManager
+                        .getDefaultSharedPreferences(requireContext())
+                        .getBoolean(Constants.PREF_PLANET_USE_CUSTOM, false));
+                updatePlanetSetting();
+                updatePlanetServerSummary();
+            });
+        }).start();
     }
 
     /**

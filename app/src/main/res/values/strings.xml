@@ -153,4 +153,15 @@
     <string name="dialog_no_notification_alert_title">Notification Permission Not Granted</string>
     <string name="open_notification_settings">Goto notification settings</string>
     <string name="dont_show_again">Don\'t show again</string>
+    <string name="planet_server">Planet server (auto download)</string>
+    <string name="planet_server_summary">Leave empty to keep the original behaviour.</string>
+    <string name="planet_server_url_hint">Planet file URL, for example http://1.2.3.4:3000/planet</string>
+    <string name="planet_server_token_hint">Download token (optional)</string>
+    <string name="planet_server_sha256_hint">Expected sha256 (optional)</string>
+    <string name="planet_server_auto_update">Download planet on every start</string>
+    <string name="planet_server_save_and_sync">Save and sync</string>
+    <string name="planet_server_cleared">Planet server cleared, using the original behaviour.</string>
+    <string name="planet_sync_success">Planet updated from server.</string>
+    <string name="planet_sync_failure">Planet download failed: %1$s</string>
+    <string name="planet_sync_fallback">Planet download failed, using %1$s</string>
 </resources>

@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingLeft="20dp"
+    android:paddingTop="8dp"
+    android:paddingRight="20dp"
+    android:paddingBottom="8dp">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:labelFor="@id/planet_server_url_input"
+        android:text="@string/planet_server_url_hint" />
+
+    <EditText
+        android:id="@+id/planet_server_url_input"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:autofillHints=""
+        android:ems="10"
+        android:inputType="textUri" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:labelFor="@id/planet_server_token_input"
+        android:text="@string/planet_server_token_hint" />
+
+    <EditText
+        android:id="@+id/planet_server_token_input"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:autofillHints=""
+        android:ems="10"
+        android:inputType="text" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:labelFor="@id/planet_server_sha256_input"
+        android:text="@string/planet_server_sha256_hint" />
+
+    <EditText
+        android:id="@+id/planet_server_sha256_input"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:autofillHints=""
+        android:ems="10"
+        android:inputType="text" />
+
+    <CheckBox
+        android:id="@+id/planet_server_auto_update"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/planet_server_auto_update" />
+</LinearLayout>

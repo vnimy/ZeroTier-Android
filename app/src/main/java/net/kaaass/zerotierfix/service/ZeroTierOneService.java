@@ -58,6 +58,7 @@ import net.kaaass.zerotierfix.ui.NetworkListActivity;
 import net.kaaass.zerotierfix.util.Constants;
 import net.kaaass.zerotierfix.util.DatabaseUtils;
 import net.kaaass.zerotierfix.util.InetAddressUtils;
+import net.kaaass.zerotierfix.util.PlanetSyncer;
 import net.kaaass.zerotierfix.util.NetworkInfoUtils;
 import net.kaaass.zerotierfix.util.StringUtils;
 
@@ -352,6 +353,10 @@ public class ZeroTierOneService extends VpnService implements Runnable, EventLis
 
                 // 创建本地节点
                 if (this.node == null) {
+                    // 启动 core 之前同步行星服务器上的 planet。
+                    // 未配置行星服务器地址时这里直接返回 null，不触碰任何文件与开关。
+                    notifyPlanetSyncResult(PlanetSyncManager.syncBeforeStart(this));
+
                     this.udpCom = new UdpCom(this, this.svrSocket);
                     this.tunTapAdapter = new TunTapAdapter(this, networkId);
 
@@ -419,6 +424,19 @@ public class ZeroTierOneService extends VpnService implements Runnable, EventLis
         }
         joinNetwork(networkId);
         return START_STICKY;
+    }
+
+    /**
+     * 行星服务器同步失败时提示用户，并说明当前回退到哪一份 planet
+     */
+    private void notifyPlanetSyncResult(PlanetSyncer.Result result) {
+        if (result == null || result.success) {
+            return;
+        }
+        Log.w(TAG, "Planet sync failed: " + result.message);
+        String message = getString(R.string.planet_sync_fallback,
+                PlanetSyncManager.fallbackDescription(this));
+        Toast.makeText(this, message, Toast.LENGTH_LONG).show();
     }
 
     public void stopZeroTier() {
