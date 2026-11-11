@@ -1,10 +1,12 @@
 package net.kaaass.zerotierfix.service;
 
+import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.ServiceInfo;
 import android.net.VpnService;
 import android.os.Binder;
 import android.os.Build;
@@ -89,6 +91,11 @@ public class ZeroTierOneService extends VpnService implements Runnable, EventLis
     private static final String[] DISALLOWED_APPS = {"com.android.vending"};
     private static final String TAG = "ZT1_Service";
     private static final int ZT_NOTIFICATION_TAG = 5919812;
+
+    /**
+     * 通知栏「断开」按钮发来的动作
+     */
+    public static final String ACTION_DISCONNECT = "net.kaaass.zerotierfix.action.DISCONNECT";
     private final IBinder mBinder = new ZeroTierBinder();
     private final DataStore dataStore = new DataStore(this);
     private final EventBus eventBus = EventBus.getDefault();
@@ -267,6 +274,13 @@ public class ZeroTierOneService extends VpnService implements Runnable, EventLis
     public int onStartCommand(Intent intent, int flags, int startId) {
         long networkId;
         Log.d(TAG, "onStartCommand");
+        if (intent != null && ACTION_DISCONNECT.equals(intent.getAction())) {
+            // 通知栏「断开」按钮：走与系统撤销 VPN 权限相同的清理流程
+            Log.i(TAG, "Disconnect requested from notification");
+            stopZeroTier();
+            stopSelf();
+            return START_NOT_STICKY;
+        }
         if (startId == 3) {
             Log.i(TAG, "Authorizing VPN");
             return START_NOT_STICKY;
@@ -439,6 +453,26 @@ public class ZeroTierOneService extends VpnService implements Runnable, EventLis
         Toast.makeText(this, message, Toast.LENGTH_LONG).show();
     }
 
+    /**
+     * 以前台服务方式运行，避免息屏或切到后台后被系统回收。
+     * Android 12+ 在后台启动前台服务可能被拒，此时退回普通通知。
+     */
+    private void startForegroundCompat(Notification notification) {
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                startForeground(ZT_NOTIFICATION_TAG, notification,
+                        ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE);
+            } else {
+                startForeground(ZT_NOTIFICATION_TAG, notification);
+            }
+        } catch (Exception e) {
+            Log.w(TAG, "startForeground failed, fallback to normal notification", e);
+            if (this.notificationManager != null) {
+                this.notificationManager.notify(ZT_NOTIFICATION_TAG, notification);
+            }
+        }
+    }
+
     public void stopZeroTier() {
         if (this.svrSocket != null) {
             this.svrSocket.close();
@@ -500,6 +534,7 @@ public class ZeroTierOneService extends VpnService implements Runnable, EventLis
         if (this.eventBus.isRegistered(this)) {
             this.eventBus.unregister(this);
         }
+        stopForeground(true);
         if (this.notificationManager != null) {
             this.notificationManager.cancel(ZT_NOTIFICATION_TAG);
         }
@@ -980,8 +1015,14 @@ public class ZeroTierOneService extends VpnService implements Runnable, EventLis
                 .setContentTitle(getString(R.string.notification_title_connected))
                 .setContentText(getString(R.string.notification_text_connected, network.getNetworkIdStr()))
                 .setColor(ContextCompat.getColor(getApplicationContext(), R.color.zerotier_orange))
+                .addAction(android.R.drawable.ic_menu_close_clear_cancel,
+                        getString(R.string.notification_action_disconnect),
+                        PendingIntent.getService(this, 1,
+                                new Intent(this, ZeroTierOneService.class).setAction(ACTION_DISCONNECT),
+                                pendingIntentFlag))
                 .setContentIntent(pendingIntent).build();
-        this.notificationManager.notify(ZT_NOTIFICATION_TAG, notification);
+        // 以前台服务运行，避免息屏或切到后台后被系统回收
+        startForegroundCompat(notification);
         Log.i(TAG, "ZeroTier One Connected");
 
         // 旧版本 Android 多播处理

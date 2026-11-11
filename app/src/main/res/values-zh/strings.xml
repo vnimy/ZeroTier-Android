@@ -162,4 +162,5 @@
     <string name="planet_sync_success">已从服务器更新 planet。</string>
     <string name="planet_sync_failure">Planet 下载失败：%1$s</string>
     <string name="planet_sync_fallback">Planet 下载失败，当前使用%1$s</string>
+    <string name="notification_action_disconnect">断开连接</string>
 </resources>
