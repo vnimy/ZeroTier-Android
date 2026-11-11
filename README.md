@@ -7,9 +7,9 @@
 <p align="center">非官方 ZeroTier Android 客户端</p>
 
 <p align="center">
-  <a href="https://github.com/vnimy/ZeroTier">GitHub 仓库</a> ·
+  <a href="https://github.com/vnimy/ZeroTier-Android">GitHub 仓库</a> ·
   <a href="https://zt.vnimy.com/app/zerotier.apk">下载 APK</a> ·
-  <a href="https://github.com/vnimy/ZeroTier/issues">问题反馈</a>
+  <a href="https://github.com/vnimy/ZeroTier-Android/issues">问题反馈</a>
 </p>
 
 <p align="center">
@@ -99,8 +99,8 @@ cmake.dir=/path/to/cmake-3.22.1
 ### 编译
 
 ```bash
-git clone --recursive https://github.com/vnimy/ZeroTier.git
-cd ZeroTier
+git clone --recursive https://github.com/vnimy/ZeroTier-Android.git
+cd ZeroTier-Android
 
 # 构建前应用 JNI 适配补丁（适配 ZeroTierOne 1.16.2）
 git -C externals/core apply ../../tools/core-patches/0001-jni-1.16.2.patch
@@ -123,7 +123,7 @@ Windows 下把最后一步换成：
 app/build/outputs/apk/debug/app-debug.apk
 ```
 
-如果使用配套的 `zt-stack/patches/zerotierfix/build.sh` 构建，脚本会自动完成补丁应用与撤销，并按 `ZeroTier-<core 版本>-debug.apk` 命名产物。
+如果使用配套的 `zt-stack/tools/build-client.sh` 构建，脚本会自动完成补丁应用与撤销，并按 `ZeroTier-<core 版本>-debug.apk` 命名产物。
 
 ### 签名
 
@@ -132,7 +132,7 @@ Debug 构建使用本机自动生成的 debug keystore。正式分发时请配�
 ## 项目结构
 
 ```text
-ZeroTier/
+ZeroTier-Android/
 ├── app/                    Android 应用（com.vnimy.zerotier）
 ├── core/                   JNI 封装库（com.zerotier.sdk）
 ├── externals/core/         ZeroTierOne 子模块（1.16.2）
@@ -179,4 +179,4 @@ App 会向当前配置的 Planet 服务器请求 `version.json`，并据此提�
 
 ## 反馈
 
-欢迎通过 [GitHub Issues](https://github.com/vnimy/ZeroTier/issues) 反馈问题。提交日志时请勿包含网络密钥、私钥或其它敏感信息。
+欢迎通过 [GitHub Issues](https://github.com/vnimy/ZeroTier-Android/issues) 反馈问题。提交日志时请勿包含网络密钥、私钥或其它敏感信息。
