@@ -101,6 +101,20 @@ public class ZeroTierOneService extends VpnService implements Runnable, EventLis
      * 通知栏「断开」按钮发来的动作
      */
     public static final String ACTION_DISCONNECT = "net.kaaass.zerotierfix.action.DISCONNECT";
+
+    /**
+     * 快捷设置磁贴使用的连接状态
+     */
+    public static final int STATE_IDLE = 0;
+    public static final int STATE_CONNECTING = 1;
+    public static final int STATE_CONNECTED = 2;
+
+    private static volatile int connectionState = STATE_IDLE;
+
+    public static int getConnectionState() {
+        return connectionState;
+    }
+
     private final IBinder mBinder = new ZeroTierBinder();
     private final DataStore dataStore = new DataStore(this);
     private final EventBus eventBus = EventBus.getDefault();
@@ -363,6 +377,7 @@ public class ZeroTierOneService extends VpnService implements Runnable, EventLis
         }
 
         // 启动 ZT 服务
+        setConnectionState(STATE_CONNECTING);
         synchronized (this) {
             try {
                 // 创建本地 ZT 服务 Socket，监听本地端口
@@ -394,6 +409,7 @@ public class ZeroTierOneService extends VpnService implements Runnable, EventLis
                         Log.d(TAG, "ZeroTierOne Node Initialized");
                     } else {
                         Log.e(TAG, "Error starting ZT1 Node: " + result);
+                        setConnectionState(STATE_IDLE);
                         return START_NOT_STICKY;
                     }
                     this.onNodeStatusRequest(null);
@@ -444,6 +460,7 @@ public class ZeroTierOneService extends VpnService implements Runnable, EventLis
                 }
             } catch (Exception e) {
                 Log.e(TAG, e.toString(), e);
+                setConnectionState(STATE_IDLE);
                 return START_NOT_STICKY;
             }
         }
@@ -604,7 +621,22 @@ public class ZeroTierOneService extends VpnService implements Runnable, EventLis
         }
     }
 
+    /**
+     * 更新连接状态并通知快捷设置磁贴刷新。
+     */
+    private void setConnectionState(int state) {
+        if (connectionState == state) {
+            return;
+        }
+        connectionState = state;
+        Log.d(TAG, "Connection state changed to " + state);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            ZeroTierTileService.requestTileRefresh(getApplicationContext());
+        }
+    }
+
     public void stopZeroTier() {
+        setConnectionState(STATE_IDLE);
         if (this.svrSocket != null) {
             this.svrSocket.close();
             this.svrSocket = null;
@@ -1076,6 +1108,7 @@ public class ZeroTierOneService extends VpnService implements Runnable, EventLis
             builder.addRoute(InetAddress.getByName("224.0.0.0"), 4);
         } catch (Exception e) {
             this.eventBus.post(new VPNErrorEvent(e.getLocalizedMessage()));
+            setConnectionState(STATE_IDLE);
             return false;
         }
 
@@ -1110,6 +1143,7 @@ public class ZeroTierOneService extends VpnService implements Runnable, EventLis
         this.vpnSocket = builder.establish();
         if (this.vpnSocket == null) {
             this.eventBus.post(new VPNErrorEvent(getString(R.string.toast_vpn_application_not_prepared)));
+            setConnectionState(STATE_IDLE);
             return false;
         }
         this.in = new FileInputStream(this.vpnSocket.getFileDescriptor());
@@ -1155,6 +1189,7 @@ public class ZeroTierOneService extends VpnService implements Runnable, EventLis
                 .setContentIntent(pendingIntent).build();
         // 以前台服务运行，避免息屏或切到后台后被系统回收
         startForegroundCompat(notification);
+        setConnectionState(STATE_CONNECTED);
         Log.i(TAG, "ZeroTier One Connected");
 
         // 旧版本 Android 多播处理

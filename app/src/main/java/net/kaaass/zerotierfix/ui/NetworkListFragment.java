@@ -300,6 +300,43 @@ public class NetworkListFragment extends Fragment {
         updateNetworkListAndNotify();
         this.eventBus.post(new NetworkListRequestEvent());
         this.eventBus.post(new NodeStatusRequestEvent());
+        // 服务已被磁贴或通知栏断开时，复位列表里的开关
+        if (ZeroTierOneService.getConnectionState() == ZeroTierOneService.STATE_IDLE) {
+            this.viewModel.doChangeConnectNetwork(null);
+        }
+        // 处理磁贴留下的一次性连接请求（例如需要用户授权 VPN 时）
+        consumeTileConnectRequest();
+    }
+
+    /**
+     * 处理快捷设置磁贴留下的一次性连接请求。
+     * <p>
+     * 磁贴没有 VPN 授权时会先打开本页面并记录请求，用户回到前台后在这里继续发起连接。
+     */
+    private void consumeTileConnectRequest() {
+        var preferences = PreferenceManager.getDefaultSharedPreferences(requireContext());
+        long requestedAt = preferences.getLong(Constants.PREF_TILE_CONNECT_REQUESTED_AT, 0L);
+        if (requestedAt <= 0) {
+            return;
+        }
+        // 无论是否过期，请求都只消费一次
+        long networkId = preferences.getLong(Constants.PREF_TILE_CONNECT_NETWORK_ID, 0L);
+        preferences.edit()
+                .remove(Constants.PREF_TILE_CONNECT_REQUESTED_AT)
+                .remove(Constants.PREF_TILE_CONNECT_NETWORK_ID)
+                .apply();
+        if (networkId == 0 || System.currentTimeMillis() - requestedAt > 15_000L) {
+            Log.w(TAG, "Ignored stale tile connect request");
+            return;
+        }
+        if (ZeroTierOneService.getConnectionState() != ZeroTierOneService.STATE_IDLE) {
+            Log.d(TAG, "Ignored tile connect request, service is not idle");
+            return;
+        }
+        Log.i(TAG, "Connecting to network from quick settings tile: "
+                + Long.toHexString(networkId));
+        this.viewModel.doChangeConnectNetwork(networkId);
+        sendStartServiceIntent(networkId);
     }
 
     @Override

@@ -163,6 +163,11 @@
     <string name="planet_sync_failure">Planet 下载失败：%1$s</string>
     <string name="planet_sync_fallback">Planet 下载失败，当前使用%1$s</string>
     <string name="notification_action_disconnect">断开连接</string>
+    <string name="quick_settings_tile_label" translatable="false">ZeroTier</string>
+    <string name="quick_settings_tile_state_connected">已连接</string>
+    <string name="quick_settings_tile_state_connecting">正在连接…</string>
+    <string name="quick_settings_tile_state_disconnected">未连接</string>
+    <string name="quick_settings_tile_no_network">请先在 Zerotier Fix 中添加网络</string>
     <string name="network_routes">路由</string>
     <string name="network_no_routes">无</string>
     <string name="route_default">默认路由</string>

@@ -17,6 +17,16 @@ public class Constants {
 
     public static final String PREF_DISABLE_NO_NOTIFICATION_ALERT = "disable_no_notification_alert";
 
+    /**
+     * 快捷设置磁贴发起连接时的时间戳（毫秒），由 App 回到前台后消费
+     */
+    public static final String PREF_TILE_CONNECT_REQUESTED_AT = "tile_connect_requested_at";
+
+    /**
+     * 快捷设置磁贴发起连接时指定的网络 ID
+     */
+    public static final String PREF_TILE_CONNECT_NETWORK_ID = "tile_connect_network_id";
+
     public static final String FILE_CUSTOM_PLANET = "planet.custom";
 
     public static final String FILE_PLANET_TEMP = "planet.custom.tmp";
