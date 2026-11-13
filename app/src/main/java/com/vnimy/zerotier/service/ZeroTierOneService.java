@@ -1174,12 +1174,16 @@ public class ZeroTierOneService extends VpnService implements Runnable, EventLis
                                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP
                                         | Intent.FLAG_ACTIVITY_CLEAR_TOP)
                         , pendingIntentFlag);
+        String networkName = network.getNetworkName();
+        if (networkName == null || networkName.trim().isEmpty()) {
+            networkName = getString(R.string.empty_network_name);
+        }
         var notification = new NotificationCompat.Builder(this, Constants.CHANNEL_ID)
                 .setPriority(1)
                 .setOngoing(true)
                 .setSmallIcon(R.mipmap.ic_launcher)
                 .setContentTitle(getString(R.string.notification_title_connected))
-                .setContentText(getString(R.string.notification_text_connected, network.getNetworkIdStr()))
+                .setContentText(getString(R.string.notification_text_connected, networkName))
                 .setColor(ContextCompat.getColor(getApplicationContext(), R.color.zerotier_orange))
                 .addAction(android.R.drawable.ic_menu_close_clear_cancel,
                         getString(R.string.notification_action_disconnect),
